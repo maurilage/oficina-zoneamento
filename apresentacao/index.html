@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arquitetura e Urbanismo · Oficina de Zoneamento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&display=swap">
+<style>
+:root { --marinho: #132742; --vermelho: #c4213e; --rosa: #f2a7b4; }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--marinho); color: #fff; font: 400 15px/1.4 "Figtree", Arial, sans-serif; }
+body { display: grid; grid-template-rows: 1fr auto; }
+.palco { display: grid; place-items: center; min-height: 0; padding: 16px; position: relative; }
+.palco img { max-width: 100%; max-height: 100%; aspect-ratio: 16 / 9; object-fit: contain; background: #fff;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, .35); user-select: none; -webkit-user-drag: none; }
+.lado { position: absolute; top: 0; bottom: 0; width: 30%; cursor: pointer; }
+.lado.ant { left: 0; } .lado.prox { right: 0; }
+.barra { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; padding: 10px 16px 14px; }
+.barra button { font: 600 14px "Figtree", Arial, sans-serif; color: #fff; background: transparent; border: 1px solid rgba(255,255,255,.4);
+  border-radius: 4px; padding: 7px 14px; cursor: pointer; }
+.barra button:hover { border-color: #fff; }
+.barra button:focus-visible, .barra a:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; min-width: 64px; }
+.links { display: flex; flex-wrap: wrap; gap: 6px 16px; flex: 1; }
+.links a { color: var(--rosa); font-weight: 600; }
+.pdf { color: rgba(255,255,255,.75); }
+.pdf:hover { color: #fff; }
+body.cheia .barra { display: none; }
+body.cheia .palco { padding: 0; }
+@media (max-width: 560px) { .palco { padding: 8px; } .barra { padding: 8px 10px 12px; } }
+</style>
+<main class="palco" aria-live="polite">
+  <img id="slide" alt="">
+  <div class="lado ant" id="ant-area" aria-hidden="true"></div>
+  <div class="lado prox" id="prox-area" aria-hidden="true"></div>
+</main>
+<nav class="barra" aria-label="Navegação">
+  <button id="ant" aria-label="Slide anterior">←</button>
+  <span class="num" id="num"></span>
+  <button id="prox" aria-label="Próximo slide">→</button>
+  <span class="links" id="links"></span>
+  <a class="pdf" href="apresentacao.pdf" download>PDF</a>
+  <button id="cheia">Tela cheia</button>
+</nav>
+<script>
+const SLIDES = [{"img": "slides/01.jpg", "links": []}, {"img": "slides/02.jpg", "links": []}, {"img": "slides/03.jpg", "links": []}, {"img": "slides/04.jpg", "links": []}, {"img": "slides/05.jpg", "links": []}, {"img": "slides/06.jpg", "links": []}, {"img": "slides/07.jpg", "links": []}, {"img": "slides/08.jpg", "links": []}, {"img": "slides/09.jpg", "links": []}, {"img": "slides/10.jpg", "links": []}, {"img": "slides/11.jpg", "links": []}, {"img": "slides/12.jpg", "links": []}, {"img": "slides/13.jpg", "links": [["Infraestrutura Dom Helder Câmara", "https://www.youtube.com/watch?v=In_nQ_nRjEU"], ["Unidade III", "https://www.youtube.com/watch?v=ls-ONBli6aQ"]]}, {"img": "slides/14.jpg", "links": []}, {"img": "slides/15.jpg", "links": []}, {"img": "slides/16.jpg", "links": []}, {"img": "slides/17.jpg", "links": []}, {"img": "slides/18.jpg", "links": [["Instruções da oficina", "https://maurilage.github.io/oficina-zoneamento/"]]}];
+let i = 0;
+const img = document.getElementById('slide'), num = document.getElementById('num'), links = document.getElementById('links');
+function mostra(n) {
+  i = Math.max(0, Math.min(SLIDES.length - 1, n));
+  const s = SLIDES[i];
+  img.src = s.img; img.alt = 'Slide ' + (i + 1);
+  num.textContent = (i + 1) + ' / ' + SLIDES.length;
+  links.replaceChildren(...s.links.map(([t, u]) => { const a = document.createElement('a'); a.href = u; a.textContent = t; a.target = '_blank'; a.rel = 'noopener'; return a; }));
+  if (location.hash !== '#' + (i + 1)) history.replaceState(null, '', '#' + (i + 1));
+  if (SLIDES[i + 1]) { const p = new Image(); p.src = SLIDES[i + 1].img; }
+}
+document.getElementById('ant').onclick = document.getElementById('ant-area').onclick = () => mostra(i - 1);
+document.getElementById('prox').onclick = document.getElementById('prox-area').onclick = () => mostra(i + 1);
+document.getElementById('cheia').onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();
+document.addEventListener('fullscreenchange', () => document.body.classList.toggle('cheia', !!document.fullscreenElement));
+document.addEventListener('keydown', e => {
+  if (['ArrowRight', 'PageDown', ' ', 'Enter'].includes(e.key)) { e.preventDefault(); mostra(i + 1); }
+  else if (['ArrowLeft', 'PageUp', 'Backspace'].includes(e.key)) { e.preventDefault(); mostra(i - 1); }
+  else if (e.key === 'Home') mostra(0); else if (e.key === 'End') mostra(SLIDES.length - 1);
+  else if (e.key === 'f') document.getElementById('cheia').click();
+});
+let x0 = null;
+img.parentElement.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+img.parentElement.addEventListener('touchend', e => {
+  if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null;
+  if (Math.abs(dx) > 40) mostra(i + (dx < 0 ? 1 : -1));
+});
+mostra((parseInt(location.hash.slice(1), 10) || 1) - 1);
+</script>
